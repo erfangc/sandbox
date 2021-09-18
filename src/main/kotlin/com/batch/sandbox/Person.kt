@@ -10,4 +10,8 @@ class Person {
 
     @get:XmlElement
     var age: Int? = null
+    
+    override fun toString(): String {
+        return "Person(name=$name, age=$age)"
+    }
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<items>
+    <meta>Hello</meta>
+    <person>
+        <name>Apple Inc.</name>
+        <age>12</age>
+    </person>
+    <person>
+        <name>Foo</name>
+        <age>10</age>
+    </person>
+    <person>
+        <name>BBD</name>
+        <age>99</age>
+    </person>
+</items>
