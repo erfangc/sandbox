@@ -8,15 +8,15 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.configuration.annotation.StepScope
 import org.springframework.batch.item.ItemReader
 import org.springframework.batch.item.ItemWriter
-import org.springframework.batch.item.file.FlatFileItemReader
-import org.springframework.batch.item.file.mapping.DefaultLineMapper
-import org.springframework.batch.item.file.transform.FixedLengthTokenizer
-import org.springframework.batch.item.file.transform.Range
+import org.springframework.batch.item.xml.builder.StaxEventItemReaderBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.FileSystemResource
+import org.springframework.core.io.Resource
+import org.springframework.oxm.jaxb.Jaxb2Marshaller
+import javax.xml.stream.XMLInputFactory
 
 @Configuration
 @EnableBatchProcessing
@@ -36,32 +36,49 @@ class JobConfig {
             .build()
     }
 
+//    @Bean
+//    @StepScope
+//    fun reader(
+//        @Value("#{jobParameters['file.input']}") input: String
+//    ): ItemReader<Person> {
+//        val lineMapper = DefaultLineMapper<Person>()
+//
+//        val tokenizer = FixedLengthTokenizer()
+//        tokenizer.setColumns(Range(1, 10), Range(11, 16))
+//        tokenizer.setNames("name", "age")
+//
+//        lineMapper.setLineTokenizer(tokenizer)
+//        lineMapper.setFieldSetMapper { fieldSet ->
+//            val age = fieldSet.readInt("age")
+//            Person(
+//                name = fieldSet.readString("name"),
+//                age = age
+//            )
+//        }
+//
+//        val itemReader = FlatFileItemReader<Person>()
+//        itemReader.setLineMapper(lineMapper)
+//        itemReader.setResource(FileSystemResource(input))
+//        return itemReader
+//    }
+
     @Bean
-    @StepScope
-    fun reader(
-        @Value("#{jobParameters['file.input']}") input: String
-    ): FlatFileItemReader<Person> {
-        val lineMapper = DefaultLineMapper<Person>()
+    fun reader():ItemReader<Person> {
 
-        val tokenizer = FixedLengthTokenizer()
-        tokenizer.setColumns(Range(1, 10), Range(11, 16))
-        tokenizer.setNames("name", "age")
+        val jaxb2Marshaller = Jaxb2Marshaller()
+        jaxb2Marshaller.setClassesToBeBound(Person::class.java)
 
-        lineMapper.setLineTokenizer(tokenizer)
-        lineMapper.setFieldSetMapper { fieldSet ->
-            val age = fieldSet.readInt("age")
-            Person(
-                name = fieldSet.readString("name"),
-                age = age
-            )
-        }
-
-        val itemReader = FlatFileItemReader<Person>()
-        itemReader.setLineMapper(lineMapper)
-        itemReader.setResource(FileSystemResource(input))
-        return itemReader
+        val reader = StaxEventItemReaderBuilder<Person>()
+            .name("personReader")
+            .resource(FileSystemResource("input.xml"))
+            .addFragmentRootElements("person")
+            .unmarshaller(jaxb2Marshaller)
+            .build()
+        
+        return reader
+        
     }
-
+    
     @Bean
     fun writer(): ItemWriter<Person> {
         return ItemWriter { items ->
