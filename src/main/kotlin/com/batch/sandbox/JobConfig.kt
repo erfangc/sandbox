@@ -9,9 +9,7 @@ import org.springframework.batch.core.configuration.annotation.StepScope
 import org.springframework.batch.item.ItemReader
 import org.springframework.batch.item.ItemWriter
 import org.springframework.batch.item.file.FlatFileItemReader
-import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper
 import org.springframework.batch.item.file.mapping.DefaultLineMapper
-import org.springframework.batch.item.file.mapping.FieldSetMapper
 import org.springframework.batch.item.file.transform.FixedLengthTokenizer
 import org.springframework.batch.item.file.transform.Range
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,6 +21,7 @@ import org.springframework.core.io.FileSystemResource
 @Configuration
 @EnableBatchProcessing
 class JobConfig {
+
     @Autowired
     private lateinit var jobBuilderFactory: JobBuilderFactory
 
@@ -30,8 +29,11 @@ class JobConfig {
     private lateinit var stepBuilderFactory: StepBuilderFactory
 
     @Bean
-    fun myJob(myStep: Step): Job {
-        return jobBuilderFactory.get("my-job").start(myStep).build()
+    fun myJob(mainStep: Step): Job {
+        return jobBuilderFactory
+            .get("my-job")
+            .start(mainStep)
+            .build()
     }
 
     @Bean
@@ -40,18 +42,17 @@ class JobConfig {
         @Value("#{jobParameters['file.input']}") input: String
     ): FlatFileItemReader<Person> {
         val lineMapper = DefaultLineMapper<Person>()
+
         val tokenizer = FixedLengthTokenizer()
-        tokenizer.setColumns(
-            Range(1, 10),
-            Range(11, 16)
-        )
+        tokenizer.setColumns(Range(1, 10), Range(11, 16))
         tokenizer.setNames("name", "age")
 
         lineMapper.setLineTokenizer(tokenizer)
         lineMapper.setFieldSetMapper { fieldSet ->
+            val age = fieldSet.readInt("age")
             Person(
                 name = fieldSet.readString("name"),
-                age = fieldSet.readInt("age")
+                age = age
             )
         }
 
@@ -59,7 +60,6 @@ class JobConfig {
         itemReader.setLineMapper(lineMapper)
         itemReader.setResource(FileSystemResource(input))
         return itemReader
-
     }
 
     @Bean
@@ -72,7 +72,7 @@ class JobConfig {
     }
 
     @Bean
-    fun myStep(
+    fun mainStep(
         reader: ItemReader<Person>,
         writer: ItemWriter<Person>
     ): Step {
